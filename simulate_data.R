@@ -25,4 +25,6 @@ pars <- list(piab=0.2, surv=.9, pa1=inv.logit(pa1),
              k=.2)
 simdata <- simulate_data(N=125, pars=pars, effort=effort.sim,
                          seed=1523, nyrs=nyrs, nseas=nseas)
+dimnames(simdata$dat$x) <-
+  list(ID=as.character(1:nrow(simdata$dat$x)), year=dimnames(effort.sim)[[1]], month=dimnames(effort.sim)[[2]])
 plot.simdat(simdata)

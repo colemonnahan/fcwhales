@@ -17,7 +17,7 @@ if(n.timesteps != dim(captures)[2])
 
 ### Process data for modeling and plotting
 ## Add extra rows to make space for the latent whales
-M <- 2*n.obs+50
+M <- n.obs+50
 post <- matrix(nrow=M, ncol=n.timesteps, data=0)
 post[1:n.obs, 1:n.timesteps] <- as.matrix(captures)
 ## Convert capture histories into array form

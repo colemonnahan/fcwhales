@@ -20,7 +20,7 @@ str(dat)
 
 ### Step 2: Run JAGS models, save model output. Only run these if needed,
 ### as they are saved as .RDS files and read back in in load_results.R
-source("run_models.R")
+source("fit_models.R")
 
 ### Step 3: Create exploratory plots and check model diagnostics
 source("load_results.R")
