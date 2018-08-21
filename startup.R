@@ -2,7 +2,6 @@ library(ggplot2)
 library(plyr)
 library(reshape2)
 library(rjags)
-load.module("dic")  # for monitoring deviance
 library(coda)
 library(boot)
 library(shinystan)
@@ -124,17 +123,28 @@ convert_to_df <- function(fit, name=NULL){
 
 
 ## Init functions.
-vb.inits <- function(dat){
-  f <- function()
-  list(surv=runif(1,0,1),
-       mu_avail=rnorm(1, 0,2),
-       sd_avail=runif(1,0,2),
-       tau_avail=rnorm(dat$nyrs,0,1),
-       k=runif(1, 0, .5),
-       zeta0=runif(1,0,1),
-       zeta=runif(1,0,1),
-       ad=matrix(nrow=dat$M, ncol=dat$nyrs, data=1),
-       ab=matrix(nrow=dat$M, ncol=dat$nyrs, data=1))
+vb.inits <- function(dat, tvzeta=FALSE){
+  f <- function(){
+    x <- list(surv=runif(1,0,1),
+              mu_avail=rnorm(1, 0,2),
+              sd_avail=runif(1,0,2),
+              tau_avail=rnorm(dat$nyrs,0,1),
+              k=runif(1, 0, .5),
+              zeta0=runif(1,0,1),
+              ad=matrix(nrow=dat$M, ncol=dat$nyrs, data=1),
+              ab=matrix(nrow=dat$M, ncol=dat$nyrs, data=1))
+    ## Two cases for zeta which change the parameters in JAGs. It can be
+    ## constant:
+    if(!tvzeta) {
+      x$zeta <- runif(1,0,1)
+    } else {
+      ## or time varying (ie random effects)
+      x$tau_zeta <- runif(dat$nyrs, -1,1)
+      x$mu_zeta <- runif(1, -1,1)
+      x$sd_zeta <- runif(1, 0,1)
+    }
+    return(x)
+  }
   return(f)
 }
 logistic.inits <- function(dat){
@@ -169,25 +179,37 @@ run_logistic <- function(datlist, n.iter, thin, n.chains){
 
 
 ## quick function to run the vb model
-run_vb <- function(datlist, n.iter, thin, n.chains, surv='uniform'){
+run_vb <- function(datlist, n.iter, thin, n.chains, surv='uniform',
+                   tvzeta=FALSE){
   ## these are necessary to get jags to run in parallel
   list2env(datlist, envir=globalenv() )
   list2env(list(n.iter=n.iter), envir=globalenv() )
   list2env(list(thin=thin), envir=globalenv() )
   surv <- match.arg(surv, c('uniform', 'informative'))
-  model.file <- ifelse(surv=='uniform', 'models/model_code_vb.R',
-                       'models/model_code_vb_surv.R')
+  if(surv=='uniform'){
+    ## uniform survival and constant zeta
+    model.file <- 'models/model_code_vb.R'
+  } else if(!tvzeta){
+    ## informative survival but constant zeta
+    model.file <- 'models/model_code_vb_surv.R'
+  } else {
+    ## informative survival and random effects on zeta
+    model.file <- 'models/model_code_vb_surv_tvzeta.R'
+  }
+  pars <-
+    c('surv', 'mu_avail', 'sd_avail', 'pa1', 'k',
+      'pa2', 'pw', 'zeta0', 'zeta', 'N',
+      'deviance', 'TotalN', 'post_predict' )
+  if(tvzeta) pars <- c(pars, 'tau_zeta', 'sd_zeta', 'mu_zeta')
   mod.vb.fit <-
     jags.parallel(model.file=model.file, data=datlist,
-                  inits=vb.inits(datlist),
+                  inits=vb.inits(datlist, tvzeta=tvzeta),
                   n.iter=n.iter,
                   n.thin=thin,
-               n.chains=n.chains,
-               #n.burnin=n.adapt,
-               parameters.to.save=c('surv', 'mu_avail', 'sd_avail', 'pa1', 'k',
-                                    'pa2', 'pw', 'zeta0', 'zeta', 'N',
-                                    'deviance', 'TotalN', 'post_predict' ))
-  return((mod.vb.fit))
+                  n.chains=n.chains,
+                  ##n.burnin=n.adapt,
+                  parameters.to.save=pars)
+  return(mod.vb.fit)
 }
 
 

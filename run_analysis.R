@@ -8,8 +8,10 @@ source("startup.R")
 
 ### Step 2: Run JAGS models, save model output. Only run these if needed,
 ### as they are saved as .RDS files and read back in in load_results.R
-# source("run_models_simulated.R")
-# source("run_models.R")
+## This old file does some simulation testing
+source("run_models_simulated.R")
+## Otherwise this one
+source("run_models.R")
 
 ### Step 3: Create exploratory plots and check model diagnostics
 source("load_results.R")
