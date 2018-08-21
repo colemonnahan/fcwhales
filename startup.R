@@ -11,7 +11,6 @@ library(R2jags)
 message("Clearing workspace..")
 rm(list=ls())
 message("Loading libraries, preparing workspace, loading data..")
-source("simulator.R")
 
 ## function to convert coda output so it works with rstan (list to array)
 convert_array <- function(x){
@@ -31,82 +30,6 @@ years <- 2002:2016
 nyrs <- length(years)
 nseas <- length(months)
 n.timesteps <- nyrs*nseas
-
-### Read in raw data from files
-message("Loading sightings data...")
-captures <- read.csv("data/capture_histories_2017_11_28.csv") # capture histories
-n.obs <- dim(captures)[1] # number of unique whales
-## Make sure each year has 8 columns and each month has 15 years
-tt <- names(captures)
-year.check <- any(nseas !=as.numeric(table(as.numeric(substr(tt,2,5)))))
-if(year.check) stop("Wrong number of seasons for years in capture data")
-month.check <- any(nyrs != as.numeric(table(substr(tt,7,9)) ))
-if(month.check) stop("Wrong number of years in a season in capture data")
-if(n.timesteps != dim(captures)[2])
-  stop("wrong number of columns in capture history data file")
-
-### Process data for modeling and plotting
-## Add extra rows to make space for the latent whales
-M <- 250#2*n.obs+50
-post <- matrix(nrow=M, ncol=n.timesteps, data=0)
-post[1:n.obs, 1:n.timesteps] <- as.matrix(captures)
-## Convert capture histories into array form
-x <- array(data=NA, dim=c(M, nyrs, nseas))
-dimnames(x) <- list("ID"=1:dim(x)[1], "year"=years, "month"=months)
-for(i in 0:(nyrs-1) ){
-	x[ ,i+1 , ] <- post[, (i*nseas + 1):(i*8 + nseas)]
-}
-if(sum(is.na(x)) > 0)
-  stop("Issue converting captures to array -- NAs present")
-
-message("Loading effort data...")
-## Effort:year x month. Each cells is the number of days of effort.
-pre.effort <- read.table("data/effort_2017_11_28.csv", header=F, sep=',')
-## transpose so month x year
-effort <- as.matrix(pre.effort)
-dimnames(effort) <- list("year"=years, "month"=months)
-effort.long <- melt(effort, value.name='effort')
-
-
-message("Checking for data issues...")
-captures.long <- melt(x)
-captures.long <- ddply(captures.long, .(month, year), summarize, unique.whales=sum(value))
-## Use this to check back with original data if needed
-## captures.long <- captures.long[order(captures.long$year, captures.long$month),]
-obs.effort <- merge(effort.long, captures.long, by=c("year", "month"))
-effort.check <- droplevels(subset(obs.effort, effort == 0 & unique.whales > 0))
-if(nrow(effort.check)>0){
-  print(effort.check)
-  warning("These months have 0 effort but observed whales")
-}
-
-## This is whether each whale was seen in a year
-seen.years <- apply(x, c(1,2), max)
-## Now get the first year seen
-temp <- as.numeric(apply(seen.years, 1, function(ii) which(ii==1)[1]))
-## Drop the NAs and convert to year.
-first.year.seen <- years[temp[1:nrow(captures)]]
-## Trick to get table to count 0 whales when year is missing
-first.year.seen <- factor(first.year.seen, levels=years)
-x1 <- as.numeric(table(first.year.seen))
-x2 <- as.numeric(apply(apply(x, c(1,2) , max), 2, sum)) # unique whales by year
-e <- as.numeric(apply(effort, 1, sum))
-whales.table <- data.frame(year=years+1, effort=e, unique.whales=x2, new.whales=x1)
-
-### No longer using this.
-## ## start months and end months for each visit
-## non.visit <- read.table("data/not_visited15.csv", header=T, row.names=1, sep=',')
-## if(nseas != dim(non.visit)[1])
-##   stop("wrong number of rows in non_visit data file")
-## NV <- as.matrix(non.visit)
-## dimnames(NV) <- list("month"=months, "year"=years)
-
-## Prep the latent whale JAGS inputs
-w <- rep(NA, length=M)
-w[1:n.obs] <- 1
-## Real data for all models
-dat <- list('w'=w, 'M'=M, 'nyrs'=nyrs, 'nseas'=nseas, 'x'= x,
-                 'effort'=effort)
 
 message("Loading initialization functions...")
 ## Converts MCMC output list into dataframe with better column names for
@@ -227,4 +150,129 @@ add.polygon <- function(x, y, z, alpha.level, alpha.min=0, alpha.max=1){
         polygon(x=c(x, rev(x)), y=c(quantiles.temp[,1], rev(quantiles.temp[,2])),
                 col=col.poly, border=NA)
     }
+}
+
+### These functions are used to simulate data for testing the model
+#' Calculate a probability of recapture based on effort and a parameters.
+#'
+#' Uses a von Bertalanffy growth formula a*(1-exp(-b*effort)) to predict
+#'   probability of capture given effort. Constraining 0<a<1 and b>0
+#'   ensures the return value are in [0,1]. Also note that this function
+#'   can be flat (b goes to Inf) or linear (b goes to 0).
+#'
+#' @param e Effort vector (days of effort in a month)
+#' @param a Equivalent to Linf parameter of the VBLG formula (saturation
+#'   point), in interval [0,1].
+#' @param b Equivalent to k parameter (controls how fast saturates)
+#' @return A vector of probablity of captures
+effort.fn <- function(e, pa1, pa2, k){
+  stopifnot(0 < pa1 & pa1 <= 1)
+  stopifnot(0 < pa2 & pa2 <= 1)
+  pcap <- pa1*pa2*(1-exp(-k*e))
+  return(pcap)
+}
+## ## Quick code to check this function is working
+## e <- seq(0, 20, len=1000)
+## k <- .1
+## xx <- ldply(c(1, .7, .9, 1), function(pa1)
+##   ldply(c(.1, .2, .5, .15), function(pa2)
+##     data.frame(pa1=pa1, pa2=pa2, e=e, pcap=effort.fn(e,pa1,pa2,k), group=paste(pa1,pa2, sep="_"))))
+## ggplot(xx, aes(e, pcap, group=group, color=factor(pa2))) + geom_line() +
+##   facet_wrap("pa1") + ylim(0,1)
+
+#' Simulate a data set that generally mimics the FC humpback whale
+#' and data collection scheme.
+#'
+#' @param N The true population size (number of whales)
+#' @param par A list of true parameters
+#' @param effort A matrix (years x months) of effort (number of days) in a
+#'   month.
+#' @param nyrs The number of years
+#' @param nseas The number of seasons (months) within a year
+#' @param seed Random number seed to set, if given
+#'
+#' @return A list containing data processed for use in the JAGS
+#'   model. I.e., it has the same structure as the real data.
+simulate_data <- function(N, pars, effort, nyrs=13, nseas=8, seed=NULL){
+  if(!is.null(seed)) set.seed(seed)
+  stopifnot(nyrs == nrow(effort))
+  stopifnot(nseas == ncol(effort))
+  ## Kinda tricky to simulate the process part of the model, where I want
+  ## to specify the number of whales alive at some point in the
+  ## study. There are no latent states in reality!
+  piab <- pars$piab
+  surv <- pars$surv
+  pa1 <- pars$pa1
+  pa2 <- pars$pa2
+  k <- pars$k
+  stopifnot(length(pa1)==nyrs)
+  stopifnot(length(pa2)==nseas)
+  ## The empty capture/recpature matrix and probabliity of captures array
+  x.true <- array(NA, dim= c(N, nyrs, nseas))
+  pcap <- matrix(NA, nyrs, nseas)
+  alive <- matrix(0, N, nyrs) # matrix of whether alive
+  probs.birth <- c(piab*20, rep(piab, nyrs-1))
+  probs.birth <- probs.birth/sum(probs.birth)
+  ## Loop through each individual whale and generate when it was alive
+  ## (stochastic birth and death) and from that stochastically sample
+  ## capture and recaptures.
+  for(ind in 1:N){
+    ## First probability here is being born in the last 20 years or on the
+    ## year of the first sampling period. This ensures most whales were born
+    ## before sampling, but some can still be born during the nyrs time
+    ## period.
+    year.born <- which(as.numeric(rmultinom(n=1, size=1, prob=probs.birth))==1)
+    ## After being recruited they can die, so determine if that happens
+    ## withing sampling period
+    test <- rbinom(n=(nyrs-year.born), size=1, prob=surv)
+    year.died <- year.born+which(test==0)[1] # NA if survived whole period
+    ## Years available to be observed (= ab*ad)
+    alive[ind, year.born:min(year.died, nyrs, na.rm=TRUE)] <- 1
+  }
+  ## I split this apart from process otherwise the sampling affected the
+  ## population dynamics due to random seeds. This way is more easily
+  ## reproducible
+  for(ind in 1:N){
+    ## Now the observation part of the model.
+    for(yr in 1:nyrs){
+      for(seas in 1:nseas){
+        pcap[yr,seas] <-
+          effort.fn(e=effort[yr,seas], pa1=pa1[yr], pa2=pa2[seas], k=k)
+        ## Try to capture the whale in yr/seas
+        x.true[ind,yr,seas] <- rbinom(n=1, size=1, prob=alive[ind,yr]*pcap[yr,seas])
+      }
+    }
+  }
+  abundance <- apply(alive, 2, sum) # abundance by year
+  observed <- apply(apply(x.true, c(1,2) , max), 2, sum) # unique whales by year
+  year.first.obs <- apply(apply(x.true, c(1,2) , max), 1, function(x)
+    which(x==1)[1])
+  observed.cumsum <- as.numeric(cumsum(table(factor(year.first.obs, levels=1:nyrs))))
+  truth <- list(abundance=abundance, pcap=pcap, observed=observed,
+  observed.cumsum=observed.cumsum, pars=pars)
+  ## Prepare data for output
+  which.unobserved <- which(apply(x.true, 1, sum)==0)
+  if(length(which.unobserved)>0){
+    x.true <- x.true[-which.unobserved,,]
+    print(paste(length(which.unobserved), "whales unobserved"))
+  }
+  M <- floor(1.5*N) # number of allowable latent whales
+  ## Build new x matrix mimicing how the analyst would do it
+  x <- array(0, dim= c(M, nyrs, nseas))
+  x[1:nrow(x.true),,] <- x.true
+  w <- c(rep(1, N), rep(NA, (M-N))) # latent whales to initialize
+  dat <- list('w'=w, 'M'=M, 'nyrs'=nyrs, 'nseas'=nseas, 'x'= x,
+              'effort'=effort)
+  return(list(dat=dat, truth=truth))
+}
+
+## quick function to explore simulated data properties
+plot.simdat <- function(sim){
+  n <- sim$dat$nyrs
+  plot(0, type='n', xlim=range(1:n), ylim=c(0,150), xlab="Year", ylab='Whales')
+  lines(1:n, sim$truth$abundance, lwd=3)
+  points(1:n, sim$truth$observed, lty=1, pch=16, col=4, type='b')
+  legend('topleft', legend=c("Sim. Abundance", "Sim. whales obs."),
+         lty=c(1,2), pch=c(NA, 16), col=c(1,4),
+         lwd=c(2,1))
 }
