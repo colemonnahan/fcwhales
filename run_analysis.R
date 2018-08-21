@@ -4,7 +4,7 @@
 ## Started 10/2017 by Cole, based off an earlier version by Noble (2015).
 
 ### Step 1: Prepare workspace and load the data for analysis
-("startup.R")
+source("startup.R")
 
 ## If you don't have available data you can use the simulated data to run
 ## the models. This will be helpful if you want to recreate the analysis
@@ -25,9 +25,7 @@ source("fit_models.R")
 
 ### Step 3: Check model diagnostics
 source("eval_models.R")
-
-### Step 4: Make tables and figures for the publication
-source("make_figures.R")
+source("make_plots.R")
 
 
 
