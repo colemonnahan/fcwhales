@@ -77,3 +77,19 @@ w[1:n.obs] <- 1
 ## Real data for all models
 realdata <- list('w'=w, 'M'=M, 'nyrs'=nyrs, 'nseas'=nseas, 'x'= x,
                  'effort'=effort)
+
+message("Dropping years 2002, 2003, and 2007 from data")
+## We decided to drop the first two years since the effort is really
+## different from other years. Earlier tests showed this had little impact
+## on key outputs like survival, but should make the availability estimates
+## better.
+realdata$nyrs <- realdata$nyrs-2
+realdata$x <- realdata$x[,-(1:2),]
+realdata$effort <- realdata$effort[-(1:2),]
+## We also decided to take out the year 2007/2008 since the photos were
+## made by someone else and dont really fit with the realdataa collection
+## scheme.
+realdata$effort["2007",] <- 0
+realdata$x[,"2007",] <- 0
+nyrs <- nyrs-2
+years <- 2003+1:nyrs

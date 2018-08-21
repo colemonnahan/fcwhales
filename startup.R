@@ -276,3 +276,30 @@ plot.simdat <- function(sim){
          lty=c(1,2), pch=c(NA, 16), col=c(1,4),
          lwd=c(2,1))
 }
+
+
+## Function to automatically make some diagnostic plots for a given fitted
+## model.
+plot_diagnostics <- function(fit, name){
+  N <- nrow(fit$BUGSoutput$sims.list[[1]])
+  fit <- as.mcmc(fit)
+  pdf(file=paste0("plots/fit_diag_", name, ".pdf"), width=8, height=6,
+      onefile=TRUE)
+  mon <- data.frame(monitor(convert_array(fit), warmup=0, probs=.5, print=FALSE))
+  mon$par <- rownames(mon)
+  mon$pct.ess <- 100*mon$n_eff/N
+  par(mfrow=c(2,1))
+  x1 <- mon[order(mon$pct.ess)[1:10], ]
+  barplot(x1$pct.ess, names=x1$par, main='% ESS', ylim=c(0,100));box()
+  x2 <- mon[order(mon$Rhat, decreasing=TRUE)[1:10], c('par', 'Rhat')]
+  barplot(x2$Rhat-1, names=x2$par, main='Rhat - 1.0', ylim=c(0,.5));box()
+  abline(h=.1)
+  par(mfrow=c(3,3))
+  ## geweke.plot(fit)
+  traceplot(fit)
+  dev.off()
+  mon$model <- name
+  mon <- subset(mon, select=c("model", "pct.ess", 'n_eff', "Rhat", "par"))
+  row.names(mon) <- NULL
+  return(mon)
+}

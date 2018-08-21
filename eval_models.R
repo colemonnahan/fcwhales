@@ -1,6 +1,18 @@
 ## This file does Bayesian convergence checks for the model fits
 
-## DIC comparisons
+### First load in the saved results and processes them where needed
+fit.log1 <- readRDS(file='results/fit.log1.RDS')
+fit.vb1 <- readRDS(file='results/fit.vb1.RDS')
+fit.vb_surv <- readRDS(file='results/fit.vb_surv.RDS')
+fit.vb_surv_tvzeta <- readRDS(file='results/fit.vb_surv_tvzeta.RDS')
+## Some convenient data.frames
+post.vb1 <- convert_to_df(fit.vb1, 'vb1')
+post.log1 <- convert_to_df(fit.log1, 'log1')
+post.vb_surv <- convert_to_df(fit.vb_surv, 'vb1surv')
+post.vb_surv_tvzeta <- convert_to_df(fit.vb_surv_tvzeta, 'vb_surv_tvzeta')
+
+
+### DIC comparisons
 dic.vb1 <- fit.vb1$BUGSoutput$DIC
 dic.log1 <- fit.log1$BUGSoutput$DIC
 dic.vb_surv <- fit.vb_surv$BUGSoutput$DIC
@@ -10,32 +22,6 @@ names(dics) <- c('Logistic', 'VB', 'VB Survival', 'VB Survival & Birth')
 deltaDIC <- round(dics-min(dics),1)
 print('DICs:')
 print(deltaDIC)
-
-## Function to automatically make some diagnostic plots for a given fitted
-## model.
-plot_diagnostics <- function(fit, name){
-  N <- nrow(fit$BUGSoutput$sims.list[[1]])
-  fit <- as.mcmc(fit)
-  pdf(file=paste0("plots/fit_diag_", name, ".pdf"), width=8, height=6,
-      onefile=TRUE)
-  mon <- data.frame(monitor(convert_array(fit), warmup=0, probs=.5, print=FALSE))
-  mon$par <- rownames(mon)
-  mon$pct.ess <- 100*mon$n_eff/N
-  par(mfrow=c(2,1))
-  x1 <- mon[order(mon$pct.ess)[1:10], ]
-  barplot(x1$pct.ess, names=x1$par, main='% ESS', ylim=c(0,100));box()
-  x2 <- mon[order(mon$Rhat, decreasing=TRUE)[1:10], c('par', 'Rhat')]
-  barplot(x2$Rhat-1, names=x2$par, main='Rhat - 1.0', ylim=c(0,.5));box()
-  abline(h=.1)
-  par(mfrow=c(3,3))
-  ## geweke.plot(fit)
-  traceplot(fit)
-  dev.off()
-  mon$model <- name
-  mon <- subset(mon, select=c("model", "pct.ess", 'n_eff', "Rhat", "par"))
-  row.names(mon) <- NULL
-  return(mon)
-}
 
 ## Run through each model and store monitor values for a quick ggplot
 ## comparison of all models
@@ -77,7 +63,7 @@ pp <- rbind(cbind(model='vb1', pp.vb1),
             cbind(model='log1', pp.log1))
 
 ## plot all on the same figure against the data
-yy <- data.frame(year=2003+1:nyrs, whales_observed=apply(apply(dat2$x,1:2, function(p) sum(p)>0), 2, sum))
+yy <- data.frame(year=years, whales_observed=apply(apply(dat$x,1:2, function(p) sum(p)>0), 2, sum))
 g <- ggplot(pp, aes(year, whales_observed)) + geom_jitter() + facet_wrap('model')
 g <- g+ geom_point(data=yy, col='red', size=3)
-g
+ggsave('plots/posterior_predictive.png', g, width=ggwidth, height=ggheight)
