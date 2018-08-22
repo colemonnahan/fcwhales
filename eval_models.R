@@ -1,6 +1,7 @@
 ## This file does Bayesian convergence checks for the model fits
 
 ### First load in the saved results and processes them where needed
+message('Loading results into R..')
 fit.log1 <- readRDS(file='results/fit.log1.RDS')
 fit.vb1 <- readRDS(file='results/fit.vb1.RDS')
 fit.vb_surv <- readRDS(file='results/fit.vb_surv.RDS')
@@ -13,6 +14,7 @@ post.vb_surv_tvzeta <- convert_to_df(fit.vb_surv_tvzeta, 'vb_surv_tvzeta')
 
 
 ### DIC comparisons
+message("Calculating DIC comparisons...")
 dic.vb1 <- fit.vb1$BUGSoutput$DIC
 dic.log1 <- fit.log1$BUGSoutput$DIC
 dic.vb_surv <- fit.vb_surv$BUGSoutput$DIC
@@ -25,6 +27,7 @@ print(deltaDIC)
 
 ## Run through each model and store monitor values for a quick ggplot
 ## comparison of all models
+message("Making diagnostic plots..")
 diag.log1 <- plot_diagnostics(fit.log1, 'log1')
 diag.vb1 <- plot_diagnostics(fit.vb1, 'vb1')
 diag.vb_surv <- plot_diagnostics(fit.vb_surv, 'vb_surv')
@@ -33,7 +36,7 @@ diag.all <- rbind(diag.log1, diag.vb1, diag.vb_surv, diag.vb_surv_tvzeta)
 diag.all.long <- melt(diag.all, id.vars=c("model", "par"))
 g <- ggplot(diag.all.long, aes(model, value, color=model)) +
   geom_jitter(width=.15, height=0, alpha=.5) +
-  facet_wrap("variable", scales='free') + theme_bw()
+  facet_wrap("variable", scales='free_y', ncol=1) + theme_bw()
 ggsave('plots/fit_diag_all.png', g, width=ggwidth, height=ggheight)
 
 ### As suggested by a reviewer we compare posterior predictive
@@ -52,6 +55,7 @@ get_post_predict <- function(x){
   return(temp)
 }
 
+message("Plotting posterior predictive distributions...")
 pp.log1 <- get_post_predict(post.log1)
 pp.vb1 <- get_post_predict(post.vb1)
 pp.vb_surv <- get_post_predict(post.vb_surv)
