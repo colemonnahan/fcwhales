@@ -2,24 +2,24 @@
 
 ### First load in the saved results and processes them where needed
 message('Loading results into R..')
-fit.log1 <- readRDS(file='results/fit.log1.RDS')
-fit.vb1 <- readRDS(file='results/fit.vb1.RDS')
+fit.log <- readRDS(file='results/fit.log.RDS')
+fit.vb <- readRDS(file='results/fit.vb.RDS')
 fit.vb_surv <- readRDS(file='results/fit.vb_surv.RDS')
 fit.vb_surv_tvzeta <- readRDS(file='results/fit.vb_surv_tvzeta.RDS')
 ## Some convenient data.frames
-post.vb1 <- convert_to_df(fit.vb1, 'vb1')
-post.log1 <- convert_to_df(fit.log1, 'log1')
-post.vb_surv <- convert_to_df(fit.vb_surv, 'vb1surv')
+post.vb <- convert_to_df(fit.vb, 'vb')
+post.log <- convert_to_df(fit.log, 'log')
+post.vb_surv <- convert_to_df(fit.vb_surv, 'vb_surv')
 post.vb_surv_tvzeta <- convert_to_df(fit.vb_surv_tvzeta, 'vb_surv_tvzeta')
 
 
 ### DIC comparisons
 message("Calculating DIC comparisons...")
-dic.vb1 <- fit.vb1$BUGSoutput$DIC
-dic.log1 <- fit.log1$BUGSoutput$DIC
+dic.vb <- fit.vb$BUGSoutput$DIC
+dic.log <- fit.log$BUGSoutput$DIC
 dic.vb_surv <- fit.vb_surv$BUGSoutput$DIC
 dic.vb_surv_tvzeta <- fit.vb_surv_tvzeta$BUGSoutput$DIC
-dics <- c(dic.log1, dic.vb1, dic.vb_surv, dic.vb_surv_tvzeta)
+dics <- c(dic.log, dic.vb, dic.vb_surv, dic.vb_surv_tvzeta)
 names(dics) <- c('Logistic', 'VB', 'VB Survival', 'VB Survival & Birth')
 deltaDIC <- round(dics-min(dics),1)
 print('DICs:')
@@ -28,11 +28,11 @@ print(deltaDIC)
 ## Run through each model and store monitor values for a quick ggplot
 ## comparison of all models
 message("Making diagnostic plots..")
-diag.log1 <- plot_diagnostics(fit.log1, 'log1')
-diag.vb1 <- plot_diagnostics(fit.vb1, 'vb1')
+diag.log <- plot_diagnostics(fit.log, 'log')
+diag.vb <- plot_diagnostics(fit.vb, 'vb')
 diag.vb_surv <- plot_diagnostics(fit.vb_surv, 'vb_surv')
 diag.vb_surv_tvzeta <- plot_diagnostics(fit.vb_surv_tvzeta, 'vb_surv_tvzeta')
-diag.all <- rbind(diag.log1, diag.vb1, diag.vb_surv, diag.vb_surv_tvzeta)
+diag.all <- rbind(diag.log, diag.vb, diag.vb_surv, diag.vb_surv_tvzeta)
 diag.all.long <- melt(diag.all, id.vars=c("model", "par"))
 g <- ggplot(diag.all.long, aes(model, value, color=model)) +
   geom_jitter(width=.15, height=0, alpha=.5) +
@@ -56,15 +56,15 @@ get_post_predict <- function(x){
 }
 
 message("Plotting posterior predictive distributions...")
-pp.log1 <- get_post_predict(post.log1)
-pp.vb1 <- get_post_predict(post.vb1)
+pp.log <- get_post_predict(post.log)
+pp.vb <- get_post_predict(post.vb)
 pp.vb_surv <- get_post_predict(post.vb_surv)
 pp.vb_surv_tvzeta <- get_post_predict(post.vb_surv_tvzeta)
 ## Combine together
-pp <- rbind(cbind(model='vb1', pp.vb1),
+pp <- rbind(cbind(model='vb', pp.vb),
             cbind(model='vb_surv', pp.vb_surv),
             cbind(model='vb_surv_tvzeta', pp.vb_surv_tvzeta),
-            cbind(model='log1', pp.log1))
+            cbind(model='log', pp.log))
 
 ## plot all on the same figure against the data
 yy <- data.frame(year=years, whales_observed=apply(apply(dat$x,1:2, function(p) sum(p)>0), 2, sum))

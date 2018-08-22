@@ -1,8 +1,8 @@
 ### Make some basic plots of the different model versions  to comare them
 
 ## The fits arranged into a list for easier processing below
-posts <- list(post.log1, post.vb1, post.vb_surv, post.vb_surv_tvzeta)
-model.names <- c('log1', 'vb1', 'vb_surv', 'vb_surv_tvzeta')
+posts <- list(post.log, post.vb, post.vb_surv, post.vb_surv_tvzeta)
+model.names <- c('log', 'vb', 'vb_surv', 'vb_surv_tvzeta')
 
 ## Look at time series of abundance
 out <- ldply(1:4, function(i)
