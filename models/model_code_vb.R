@@ -9,11 +9,11 @@ model{
     ## Latent state for whether whale i exists or not
     w[ind] ~ dbern(pw)
     for(yr in 1:nyrs){ # loop over years
-      ## DEATH
+      ## Death indicator: 0 if died before or in year j, 1 otherwise
       ad[ind,yr] ~ dbern(piad[ind,yr])
-      ## BIRTH
+      ## Birth indicator: 1 if born before or in year j, 0 otherwise
       ab[ind,yr] ~ dbern(piab[ind,yr])
-      ## ALIVE
+      ## Alive indicator: 1 if animal alive, 0 if dead in year yr.
       a[ind,yr] <- ab[ind,yr]*ad[ind,yr]*w[ind]
       for(seas in 1:nseas){ # loop over months (within year)
         ## CAPTURE
