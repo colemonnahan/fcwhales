@@ -26,3 +26,11 @@ out <- ldply(1:4, function(i)
   data.frame(model= model.names[i], survival=posts[[i]][,'surv']))
 g <- ggplot(out, aes(x=model,y=survival)) + geom_violin()
 ggsave('plots/survival.png', g, width=ggwidth, height=ggheight)
+
+
+## How about the time-varying birth (zeta). The first and last year are
+## different hence the nyrs-2.
+xx <- post.vb_surv_tvzeta[, paste('zeta', 1:(nyrs-2), sep='_')]
+png('plots/tvzeta.png', width=ggwidth, height=ggheight, units='in', res=500)
+boxplot(xx, names=years[-c(1,nyrs)], xlab='Year', ylab='Probability of birth')
+dev.off()

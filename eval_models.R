@@ -12,6 +12,11 @@ post.log <- convert_to_df(fit.log, 'log')
 post.vb_surv <- convert_to_df(fit.vb_surv, 'vb_surv')
 post.vb_surv_tvzeta <- convert_to_df(fit.vb_surv_tvzeta, 'vb_surv_tvzeta')
 
+## ## Can manually check these like this
+## launch_shinystan(as.shinystan(as.mcmc(fit.log)))
+## launch_shinystan(as.shinystan(as.mcmc(fit.vb)))
+## launch_shinystan(as.shinystan(as.mcmc(fit.vb_surv)))
+## launch_shinystan(as.shinystan(as.mcmc(fit.vb_surv_tvzeta)))
 
 ### DIC comparisons
 message("Calculating DIC comparisons...")
