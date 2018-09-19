@@ -1,5 +1,10 @@
 ### This script is the central place for analyzing the FC humpback whale
-### mark-recapture photoID data.
+### mark-recapture photoID data for the paper:
+
+## Monnahan C.C., J. Acevedo, A.N. Hendrix, S. Gende, A. Aguayo-Lobo, and
+## F. Martinez (in review). Population trends for humpback whales (Megaptera
+## novaeangliae) foraging in the Francisco Coloane Coastal-Marine Protected
+## Area, Magellan Strait, Chile.
 
 ## Started 10/2017 by Cole, based off an earlier version by Noble (2015).
 
