@@ -24,7 +24,8 @@ pd.vb <- fit.vb$BUGSoutput$pD
 pd.log <- fit.log$BUGSoutput$pD
 pd.vb_surv <- fit.vb_surv$BUGSoutput$pD
 pd.vb_surv_tvzeta <- fit.vb_surv_tvzeta$BUGSoutput$pD
-pds <- c(pd.log, pd.vb, pd.vb_surv, pd.vb_surv_tvzeta)
+pds <- round(c(pd.log, pd.vb, pd.vb_surv, pd.vb_surv_tvzeta),1)
+names(pds) <- c('Logistic', 'VB', 'VB Survival', 'VB Survival & Birth')
 pds
 
 dic.vb <- fit.vb$BUGSoutput$DIC

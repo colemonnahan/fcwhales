@@ -12,7 +12,7 @@ out <- ldply(1:4, function(i)
               med=median(value),
               upr=quantile(value, .975))))
 g <- ggplot(out, aes(x=years)) + geom_ribbon(aes(ymin=lwr, ymax=upr), fill=gray(.6)) +
-  geom_line(aes(y=med), lwd=2) + facet_wrap('model')
+  geom_line(aes(y=med), lwd=2) + facet_wrap('model') + ylim(0,100)
 ggsave('plots/abundances.png', g, width=ggwidth, height=ggheight)
 
 ## Abundance in last year
