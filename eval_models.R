@@ -20,6 +20,13 @@ post.vb_surv_tvzeta <- convert_to_df(fit.vb_surv_tvzeta, 'vb_surv_tvzeta')
 
 ### DIC comparisons
 message("Calculating DIC comparisons...")
+pd.vb <- fit.vb$BUGSoutput$pD
+pd.log <- fit.log$BUGSoutput$pD
+pd.vb_surv <- fit.vb_surv$BUGSoutput$pD
+pd.vb_surv_tvzeta <- fit.vb_surv_tvzeta$BUGSoutput$pD
+pds <- c(pd.log, pd.vb, pd.vb_surv, pd.vb_surv_tvzeta)
+pds
+
 dic.vb <- fit.vb$BUGSoutput$DIC
 dic.log <- fit.log$BUGSoutput$DIC
 dic.vb_surv <- fit.vb_surv$BUGSoutput$DIC
