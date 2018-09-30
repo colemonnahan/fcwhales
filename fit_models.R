@@ -3,7 +3,7 @@
 
 ## MCMC settings; th=thing; ni= iterations (total); nc= chains (parallel)
 ## th <- 1; ni <- 100*th; nc <- 3; (ni/2/th*nc) # quick laptop runs
-th <- 200; ni <- 1000*th; nc <- 4; (ni/2/th*nc) # full runs
+th <- 400; ni <- 1000*th; nc <- 4; (ni/2/th*nc) # full runs
 
 t1 <- Sys.time()
 fit.vb <- run_vb(dat, ni, th, nc)
