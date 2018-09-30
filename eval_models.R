@@ -26,7 +26,8 @@ pd.vb_surv <- fit.vb_surv$BUGSoutput$pD
 pd.vb_surv_tvzeta <- fit.vb_surv_tvzeta$BUGSoutput$pD
 pds <- round(c(pd.log, pd.vb, pd.vb_surv, pd.vb_surv_tvzeta),1)
 names(pds) <- c('Logistic', 'VB', 'VB Survival', 'VB Survival & Birth')
-pds
+print('pD:')
+print(pds)
 
 dic.vb <- fit.vb$BUGSoutput$DIC
 dic.log <- fit.log$BUGSoutput$DIC
@@ -81,6 +82,13 @@ pp <- rbind(cbind(model='vb', pp.vb),
 
 ## plot all on the same figure against the data
 yy <- data.frame(year=years, whales_observed=apply(apply(dat$x,1:2, function(p) sum(p)>0), 2, sum))
-g <- ggplot(pp, aes(year, whales_observed)) + geom_jitter() + facet_wrap('model')
+g <- ggplot(pp, aes(year, whales_observed)) +
+  geom_jitter(height=.1, width=.5, size=.1, alpha=.1) +
+  facet_wrap('model')
 g <- g+ geom_point(data=yy, col='red', size=3)
 ggsave('plots/posterior_predictive.png', g, width=ggwidth, height=ggheight)
+
+## Compare the posterior predictive with and without the tvzeta component.
+pp2 <- droplevels(subset(pp, model %in% c('vb_surv','vb_surv_tvzeta')))
+ggplot(pp2, aes(x=factor(year), y=whales_observed, fill=model))+
+  geom_violin(scale='width')
