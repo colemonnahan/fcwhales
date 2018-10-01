@@ -12,6 +12,12 @@ post.log <- convert_to_df(fit.log, 'log')
 post.vb_surv <- convert_to_df(fit.vb_surv, 'vb_surv')
 post.vb_surv_tvzeta <- convert_to_df(fit.vb_surv_tvzeta, 'vb_surv_tvzeta')
 
+if(any(c(any(post.vb$TotalN == M),
+      any(post.log$TotalN == M),
+      any(post.vb_surv$TotalN == M),
+      any(post.vb_surv_tvzeta$TotalN == M))))
+  stop("M too low: some models had TotalN==M")
+
 ## ## Can manually check these like this
 ## launch_shinystan(as.shinystan(as.mcmc(fit.log)))
 ## launch_shinystan(as.shinystan(as.mcmc(fit.vb)))
