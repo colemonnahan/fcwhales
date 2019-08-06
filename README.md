@@ -2,10 +2,7 @@
 
 This repository contains model code and analysis for the paper:
 
-Monnahan C.C., J. Acevedo, A.N. Hendrix, S. Gende, A. Aguayo-Lobo,
-F. Martinez (in review). Population trends for humpback whales (Megaptera
-novaeangliae) foraging in the Coastal-Marine Protected Area in Magellan
-Strait, Chile. In review at Marine Mammal Science.
+Monnahan, C. C., Acevedo, J., Noble Hendrix, A., Gende, S., Aguayo-Lobo, A., and Martinez, F. 2019. Population trends for humpback whales (Megaptera novaeangliae) foraging in the Francisco Coloane Coastal-Marine Protected Area, Magellan Strait, Chile. Marine Mammal Science, doi:10.1111/mms.12582. 
 
 The original data are confidential, but we arranged this analysis to be
 reproducible with a simulated data set. This should allow interested
